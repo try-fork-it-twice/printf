@@ -2,12 +2,12 @@ Data packet:
 ```
 | timestamp | task_id | type |
 |-----------|---------|------|
-| u64       | u64     | u64  |
+| u64       | u64     | u16  |
 ```
 
 Data flow:
 
-`[ [24 byte], [24 byte], ..., [24 byte] ]`
+`[ [18 byte], [18 byte], ..., [18 byte] ]`
 
 ```
 +-------+-------+-------+
