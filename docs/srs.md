@@ -65,21 +65,75 @@ typedef struct {
     SCANF_TraceMessage* messages;
 } SCANF_TraceLog;
 
-/// Инициализация глобального журнала трассировки с заданной ёмкостью.
-/// Выделяет в куче log_capacity * sizeof(SCANF_TraceMessage) байт.
-void SCANF_INIT(size_t log_capacity);
+typedef void (*trace_log_overflow_handler_t)(SCANF_TraceLog*);
 
-/// Сброс журнала трассировки.
+typedef int (*trace_log_save_handler_t)(SCANF_TraceLog*);
+
+/// Инициализация глобального журнала трассировки с заданной ёмкостью.
+/// Выделяет в куче log_capacity * sizeof(SCANF_TraceMessage) байт с помощью pvPortMalloc().
+///
+/// Код возврата: 0 - ок, 1 - вызов pvPortMalloc() вернул ошибку, 2 - трейс-лог уже был инициализирован.
+int SCANF_INIT(size_t log_capacity);
+
+/// Регистрация обработчика переполнения трейс-лога.
+/// Перед вызовом обработчика трассировка будет остановлена.
+int SCANF_SET_OVERFLOW_HANDLER(trace_log_overflow_handler_t* overflow_handler);
+
+/// Освобождает память, выделенную в SCANF_INIT.
+/// После этого можно снова безопасно вызвать SCANF_INIT.
+void SCANF_DEINIT(size_t log_capacity);
+
+/// Сброс размера журнала трассировки.
 void SCANF_RESET();
 
-/// Включение трассировки.
-void SCANF_ENABLE_TRACING();
+/// Начало трассировки.
+void SCANF_START_TRACING();
 
-/// Отключение трассировки.
-void SCANF_DISABLE_TRACING();
+/// Остановка трассировки.
+void SCANF_STOP_TRACING();
 
 /// Сохранение журнала трассировки с использованием переданного обработчика.
-void SCANF_SAVE(void (*save_handler)(SCANF_TraceLog*));
+/// Перед вызовом трассировка должка быть остановлена.
+///
+/// Код возврата: -1 - функция вызвана при включенной трассировке. Иначе значение, возвращенное save_handler.
+int SCANF_SAVE(trace_log_save_handler_t save_handler);
+```
+
+**Пример использования:**
+```c
+int save_handler(SCANF_TraceLog* log) {
+    FILE* fd = fopen("trace.bin", "a");
+    fwrite(log->messages, sizeof(SCANF_TraceMessage), size_t n, fd);
+    fclose(fd);
+    return 0;
+}
+
+void overflow_handler(SCANF_TraceLog* log) {
+    if (SCANF_SAVE(save_handler) != 0) {
+        printf("Failed to save trace log\n");
+    }
+    SCANF_RESET();
+    SCANF_START_TRACING();
+}
+
+int main() {
+    if (SCANF_INIT(100) != 0) {
+        printf("Failed to initialize trace log\n");
+        return 1;
+    }
+
+    SCANF_SET_OVERFLOW_HANDLER(overflow_handler);
+    SCANF_START_TRACING();
+
+    SCANF_STOP_TRACING();
+
+    if (SCANF_SAVE(save_handler) != 0) {
+        printf("Failed to save trace log\n");
+    }
+
+    SCANF_DEINIT();
+    return 0;
+}
 ```
 
 ### 3.4 Желаемый функционал будущих версий
