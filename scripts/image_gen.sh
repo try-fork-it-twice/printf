@@ -1,0 +1,1 @@
+./node_modules/.bin/mmdc -i ./input.mmd -o output.svg --configFile="mermaidRenderConfig.json" -w 10000
