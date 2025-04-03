@@ -1,0 +1,14 @@
+.venv
+__pycache__/
+.pytest_cache/
+dist/
+*.pyc
+*.pyo
+*.egg-info/
+.DS_Store
+
+# Poetry
+poetry.lock
+
+# Example bin trace files
+*.bin
