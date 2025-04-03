@@ -27,7 +27,7 @@ class TaskCreate(TraceEvent):
         return f"TaskCreate(timestamp={self.timestamp}, task_number={self.task_number}, task_name={self.task_name})"
 
     @classmethod
-    def from_buffer(cls, buf: bytes):
+    def from_bytes(cls, buf: bytes):
         _, timestamp, task_number, raw_task_name = struct.unpack(
             cls.STRUCT_FORMAT, buf[: cls.SIZE]
         )
@@ -53,7 +53,7 @@ class TaskSwitched(TraceEvent):
         return f"TaskSwitched({type_str}, timestamp={self.timestamp}, task_number={self.task_number})"
 
     @classmethod
-    def from_buffer(cls, buf: bytes):
+    def from_bytes(cls, buf: bytes):
         event_type, timestamp, task_number = struct.unpack(
             cls.STRUCT_FORMAT, buf[: cls.SIZE]
         )
@@ -61,9 +61,8 @@ class TaskSwitched(TraceEvent):
 
 
 class TraceLog:
-    def __init__(self, max_task_name_len: int = SCANF_MAX_TASK_NAME_LEN):
+    def __init__(self):
         self.events = []
-        self.scanf_max_task_name_len = max_task_name_len
 
     def load(self, filename: str):
         with open(filename, "rb") as f:
@@ -73,12 +72,12 @@ class TraceLog:
         while offset < len(content):
             event_type = content[offset]
             if event_type == TASK_CREATE:
-                event = TaskCreate.from_buffer(
+                event = TaskCreate.from_bytes(
                     content[offset : offset + TaskCreate.SIZE]
                 )
                 offset += TaskCreate.SIZE
             elif event_type in (TASK_SWITCHED_IN, TASK_SWITCHED_OUT):
-                event = TaskSwitched.from_buffer(
+                event = TaskSwitched.from_bytes(
                     content[offset : offset + TaskSwitched.SIZE]
                 )
                 offset += TaskSwitched.SIZE
@@ -90,6 +89,6 @@ class TraceLog:
 
 
 if __name__ == "__main__":
-    trace_log = TraceLog(2).load("tests/traces/trace2.bin")
+    trace_log = TraceLog().load("tests/traces/trace2.bin")
     for event in trace_log.events:
         print(event)
