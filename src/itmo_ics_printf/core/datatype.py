@@ -86,9 +86,3 @@ class TraceLog:
             self.events.append(event)
 
         return self
-
-
-if __name__ == "__main__":
-    trace_log = TraceLog().load("tests/traces/trace2.bin")
-    for event in trace_log.events:
-        print(event)
