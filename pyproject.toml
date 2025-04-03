@@ -18,6 +18,7 @@ dependencies = []
 icecream = "^2.1.4"
 pytest = "^8.3.5"
 pytest-cov = "^6.0.0"
+plotly = "^6.0.1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

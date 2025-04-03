@@ -1,7 +1,5 @@
 import struct
 
-from icecream import ic
-
 
 TASK_CREATE = 0
 TASK_SWITCHED_IN = 1
@@ -93,6 +91,5 @@ class TraceLog:
 
 if __name__ == "__main__":
     trace_log = TraceLog(2).load("tests/traces/trace2.bin")
-    ic(SCANF_MAX_TASK_NAME_LEN)
     for event in trace_log.events:
         print(event)
