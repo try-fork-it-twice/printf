@@ -20,8 +20,3 @@ def test_plotly():
         assert isinstance(fig, go.Figure)
     except ImportError:
         pytest.skip("plotly not installed")
-
-
-# Make possible to run this test independently by poetry run python tests/test_plotly.py
-if __name__ == "__main__":
-    test_plotly()
