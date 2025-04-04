@@ -10,7 +10,7 @@ SCANF_MAX_TASK_NAME_LEN = 64
 
 class TraceEvent:
     @classmethod
-    def from_bytes(cls, buf: bytes):
+    def from_bytes(cls, buf: bytes) -> "TraceEvent":
         raise NotImplementedError("Subclasses should implement this method")
 
 
@@ -23,11 +23,11 @@ class TaskCreate(TraceEvent):
         self.task_number = task_number
         self.task_name = task_name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"TaskCreate(timestamp={self.timestamp}, task_number={self.task_number}, task_name={self.task_name})"
 
     @classmethod
-    def from_bytes(cls, buf: bytes):
+    def from_bytes(cls, buf: bytes) -> "TaskCreate":
         _, timestamp, task_number, raw_task_name = struct.unpack(
             cls.STRUCT_FORMAT, buf[: cls.SIZE]
         )
@@ -44,7 +44,7 @@ class TaskSwitched(TraceEvent):
         self.timestamp = timestamp
         self.task_number = task_number
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         type_str = (
             "TASK_SWITCHED_IN"
             if self.event_type == TASK_SWITCHED_IN
@@ -53,7 +53,7 @@ class TaskSwitched(TraceEvent):
         return f"TaskSwitched({type_str}, timestamp={self.timestamp}, task_number={self.task_number})"
 
     @classmethod
-    def from_bytes(cls, buf: bytes):
+    def from_bytes(cls, buf: bytes) -> "TaskSwitched":
         event_type, timestamp, task_number = struct.unpack(
             cls.STRUCT_FORMAT, buf[: cls.SIZE]
         )
@@ -64,7 +64,7 @@ class TraceLog:
     def __init__(self):
         self.events = []
 
-    def load(self, filename: str):
+    def load(self, filename: str) -> "TraceLog":
         with open(filename, "rb") as f:
             content = f.read()
 

@@ -12,3 +12,6 @@ poetry.lock
 
 # Example bin trace files
 *.bin
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
