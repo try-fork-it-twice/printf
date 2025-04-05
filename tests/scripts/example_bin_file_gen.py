@@ -66,3 +66,22 @@ if __name__ == "__main__":
     )
 
     gen().task_switched_in(timestamp=10, task_number=1).save(f"{traces_dir}trace3.bin")
+
+    (
+        gen()
+        .task_create(timestamp=0, task_number=1, task_name="init")
+        .task_switched_in(timestamp=5, task_number=1)
+        .task_create(timestamp=10, task_number=2, task_name="file_system_init")
+        .task_create(timestamp=12, task_number=3, task_name="network_init")
+        .task_create(timestamp=14, task_number=4, task_name="io_init")
+        .task_switched_out(timestamp=15, task_number=1)
+        .task_switched_in(timestamp=16, task_number=2)
+        .task_switched_out(timestamp=21, task_number=2)
+        .task_switched_in(timestamp=22, task_number=3)
+        .task_switched_out(timestamp=27, task_number=3)
+        .task_switched_in(timestamp=28, task_number=4)
+        .task_switched_out(timestamp=33, task_number=4)
+        .task_switched_in(timestamp=34, task_number=1)
+        .task_switched_out(timestamp=39, task_number=1)
+        .save(f"{traces_dir}trace4.bin")
+    )
