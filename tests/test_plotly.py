@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 def test_plotly():
     try:
-        tracelog = TraceLog().load("tests/traces/trace2.bin")
+        tracelog = TraceLog().load("tests/traces/trace4.bin")
 
         adapter = create_adapter("plotly")
         plot_data: Dict[str, Any] = adapter.convert(tracelog)
