@@ -33,6 +33,7 @@ def test_plotly_no_events() -> None:
     assert isinstance(fig, go.Figure)
     assert len(fig.data) == 0
 
+
 def test_plotly_lonely_switch() -> None:
     tracelog = MagicMock()
     tracelog.events = [
@@ -42,7 +43,7 @@ def test_plotly_lonely_switch() -> None:
     with pytest.raises(Exception):
         adapter = create_adapter("plotly")
         plot_data: Dict[str, Any] = adapter.convert(tracelog)
-        go.Figure(data=plot_data["data"], layout=plot_data["layout"]).show()
+        go.Figure(data=plot_data["data"], layout=plot_data["layout"])
 
 
 def test_plotly_switch_without_create() -> None:
@@ -113,6 +114,7 @@ def test_plotly_double_switch_out_after_in() -> None:
         adapter = create_adapter("plotly")
         plot_data: Dict[str, Any] = adapter.convert(tracelog)
         go.Figure(data=plot_data["data"], layout=plot_data["layout"])
+
 
 def test_plotly_create_between_switches() -> None:
     tracelog = MagicMock()
