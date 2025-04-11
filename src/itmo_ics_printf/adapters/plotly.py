@@ -3,8 +3,6 @@ from itmo_ics_printf.core.datatype import TraceLog, TaskCreate
 from typing import List, Dict, Any, Tuple
 import random
 
-from icecream import ic
-
 
 class PlotlyAdapter(TraceLogAdapter):
     def convert(self, tracelog: TraceLog) -> Dict[str, Any]:
