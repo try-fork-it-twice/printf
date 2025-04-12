@@ -59,7 +59,7 @@ typedef enum : uint8_t {
 
 typedef struct __attribute__((__packed__)) {
     uint8_t event_type; /**< One of the SCANF_EventType values specifying the event type. Full event details must be retrieved from the corresponding structure. */
-    uint32_t timestamp;  /**< Timestamp when the event occurred, in milliseconds since system start. */
+    uint32_t timestamp;  /**< Timestamp when the event occurred, in microseconds since system start. */
 } SCANF_TraceMessage;
 
 typedef struct __attribute__((__packed__)) {
