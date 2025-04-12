@@ -2,7 +2,7 @@
 
 > Search for `#define trace<event name>` in the FreeRTOS-Kernel codebase to find event documentation and details about available arguments.
 
-### 0.x.x
+### 0.1.0
 
 These events must be implemented as part of the initial MVP version of `scanf/printf`. This involves support for basic task events.
 
@@ -36,6 +36,10 @@ These events must be implemented as part of the initial MVP version of `scanf/pr
 
 **Parameters:** A pointer to the task control block is available within the macro's scope as the `pxCurrentTCB` variable.
 
+### 0.2.0
+
+Adds the `SCANF_CONFIG` event to make version and configs of scanf available to pritnf. This is an *artificial* event only related to scanf/printf and not to FreeRTOS.
+
 ### 1.x.x
 
 This milestone completes basic task event tracking by handling different task states such as delayed, suspended, and blocked (e.g., on a queue, semaphore, or mutex).
@@ -54,13 +58,26 @@ The trace log is an array consisting of trace messages. Each trace message conta
 typedef enum __attribute__((__packed__)) {
     SCANF_TASK_CREATE = 0,
     SCANF_TASK_SWITCHED_IN,
-    SCANF_TASK_SWITCHED_OUT
+    SCANF_TASK_SWITCHED_OUT,
+    SCANF_CONFIG
 } SCANF_EventType;
 
 typedef struct __attribute__((__packed__)) {
     SCANF_EventType event_type; /**< One of the SCANF_EventType values specifying the event type. Full event details must be retrieved from the corresponding structure. */
     uint32_t timestamp;  /**< Timestamp when the event occurred, in microseconds since system start. */
 } SCANF_TraceMessage;
+
+typedef struct __attribute__((__packed__)) {
+    uint8_t major;
+    uint8_t minor;
+    uint8_t patch;
+} SCANF_Version;
+
+typedef struct __attribute__((__packed__)) {
+    SCANF_EventType event_type; /**< Must be SCANF_EventType.SCANF_CONFIG */
+    SCANF_Version version;
+    uint8_t config_max_task_name_len; // configMAX_TASK_NAME_LEN property of the FreeRTOS config
+} SCANF_CONFIG_TraceMessage;
 
 typedef struct __attribute__((__packed__)) {
     SCANF_EventType event_type; /**< Must be SCANF_EventType.SCANF_TASK_CREATE */
