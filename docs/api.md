@@ -51,32 +51,32 @@ The trace log is an array consisting of trace messages. Each trace message conta
 ```c
 #define SCANF_MAX_TASK_NAME_LEN 64
 
-typedef enum : uint8_t {
-    TASK_CREATE,
-    TASK_SWITCHED_IN,
-    TASK_SWITCHED_OUT
+typedef enum __attribute__((__packed__)) {
+    SCANF_TASK_CREATE = 0,
+    SCANF_TASK_SWITCHED_IN,
+    SCANF_TASK_SWITCHED_OUT
 } SCANF_EventType;
 
 typedef struct __attribute__((__packed__)) {
-    uint8_t event_type; /**< One of the SCANF_EventType values specifying the event type. Full event details must be retrieved from the corresponding structure. */
+    SCANF_EventType event_type; /**< One of the SCANF_EventType values specifying the event type. Full event details must be retrieved from the corresponding structure. */
     uint32_t timestamp;  /**< Timestamp when the event occurred, in microseconds since system start. */
 } SCANF_TraceMessage;
 
 typedef struct __attribute__((__packed__)) {
-    uint8_t event_type; /**< Must be SCANF_EventType.TASK_CREATE */
+    SCANF_EventType event_type; /**< Must be SCANF_EventType.SCANF_TASK_CREATE */
     uint32_t timestamp;
     uint32_t task_number; /**< Unique identifier of the newly created task. */
     char task_name[SCANF_MAX_TASK_NAME_LEN]; /**< Null-terminated task name. May be truncated if `configMAX_TASK_NAME_LEN` exceeds `SCANF_MAX_TASK_NAME_LEN`. */
 } SCANF_TASK_CREATE_TraceMessage;
 
 typedef struct __attribute__((__packed__)) {
-    uint8_t event_type; /**< Must be SCANF_EventType.TASK_SWITCHED_IN */
+    SCANF_EventType event_type; /**< Must be SCANF_EventType.SCANF_TASK_SWITCHED_IN */
     uint32_t timestamp;
     uint32_t task_number;
 } SCANF_TASK_SWITCHED_IN_TraceMessage;
 
 typedef struct __attribute__((__packed__)) {
-    uint8_t event_type; /**< Must be SCANF_EventType.TASK_SWITCHED_OUT */
+    SCANF_EventType event_type; /**< Must be SCANF_EventType.SCANF_TASK_SWITCHED_OUT */
     uint32_t timestamp;
     uint32_t task_number;
 } SCANF_TASK_SWITCHED_OUT_TraceMessage;
@@ -85,27 +85,39 @@ typedef struct __attribute__((__packed__)) {
 ## C API
 
 ```c
-typedef void (*trace_log_overflow_handler_t)(SCANF_TraceLog*);
-
-typedef struct {
-    trace_log_overflow_handler_t overflow_handler; /**< Function pointer to be called when the message array exceeds its capacity. */
-    uint32_t size; /**< Total size of the recorded trace log in bytes. */
+typedef struct SCANF_Tracelog {
+    uint32_t size;  /**< Total size of the recorded trace log in bytes. */
     uint32_t capacity; /**< Allocated memory size (in bytes) for storing trace log messages. */
-    SCANF_EventType messages[]; /**< Traced event messages. WARNING: Do not iterate using `sizeof(SCANF_EventType)`. Use the actual event message structure size, derived from `event_type`, to calculate the offset of the next entry. */
-} SCANF_TraceLog;
+    SCANF_EventType *messages; /**< Traced event messages. WARNING: Do not iterate using `sizeof(SCANF_EventType)`. Use the actual event message structure size, derived from `event_type`, to calculate the offset of the next entry. */
+} SCANF_Tracelog;
 
-/// Initialize the global trace log pointer with a user-allocated trace log structure.
-void SCANF_INIT(SCANF_TraceLog* tracelog);
+/**
+ * Initialize the global trace log pointer with a preallocated trace log structure.
+ */
+void scanf_init(SCANF_Tracelog *tracelog);
 
-/// Retrieve the global trace log handler so the user can access its underlying data.
-SCANF_TraceLog* SCANF_TRACELOG_HANDLER();
+/**
+ * Retrieve the global trace log handler.
+ */
+SCANF_Tracelog *scanf_get_tracelog();
 
-/// Reset the trace log size.
-void SCANF_RESET();
+/**
+ * Reset the trace log size.
+ */
+void scanf_reset();
 
-/// Start recording events in the trace log.
-void SCANF_START_TRACING();
+/**
+ * Start recording events in the trace log.
+ */
+void scanf_start_tracing();
 
-/// Stop recording events in the trace log.
-void SCANF_STOP_TRACING();
+/**
+ * Stop recording events in the trace log.
+ */
+void scanf_stop_tracing();
+
+/**
+ * Save recorded trace log to the file.
+ */
+int scanf_save_tracelog(const char *filepath);
 ```
