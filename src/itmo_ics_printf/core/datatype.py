@@ -167,7 +167,7 @@ class TraceLog:
                 )
                 offset += TaskScanfConfig.SIZE
                 self.events.append(event)
-                self._configure(event.version.__repr__(), event.max_task_name_len)
+                self._configure(event.version, event.max_task_name_len)
 
                 break
             _warning(
