@@ -1,6 +1,5 @@
 import pytest
 from tests.scripts.example_bin_file_gen import gen
-from itmo_ics_printf import __version__
 from itmo_ics_printf.core.datatype import (
     TaskCreate,
     TaskSwitched,
