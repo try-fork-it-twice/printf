@@ -1,6 +1,7 @@
 import struct
 import sys
 from typing import Optional, Dict
+from itmo_ics_printf import __version__
 
 try:
     from icecream import ic
@@ -8,6 +9,9 @@ except ImportError:
 
     def ic(*args):
         print(*args)
+
+
+SCANF_VERSION = tuple(map(int, __version__.split(".")))
 
 
 TASK_CREATE = 0
@@ -27,6 +31,11 @@ def _warning(message: str) -> None:
     print(f"{"-" * 20}\nWarning:\n{message}\n{"-" * 20}\n", file=sys.stderr, end="")
 
 
+def _error(message: str) -> None:
+    print(f"{"-" * 20}\nError:\n{message}\n{"-" * 20}\n", file=sys.stderr, end="")
+    raise Exception(message)
+
+
 class TraceEvent:
     @classmethod
     def from_bytes(
@@ -37,9 +46,9 @@ class TraceEvent:
 
 class TaskScanfConfig(TraceEvent):
     class ScanfVersion:
-        major = 0
-        minor = 1
-        patch = 0
+        major = SCANF_VERSION[0]
+        minor = SCANF_VERSION[1]
+        patch = SCANF_VERSION[2]
 
         def __init__(self, major: int, minor: int, patch: int):
             self.major = major
@@ -165,12 +174,18 @@ class TraceLog:
                 event = TaskScanfConfig.from_bytes(
                     content[offset : offset + TaskScanfConfig.SIZE]
                 )
+                if event.version.major != SCANF_VERSION[0]:
+                    _error(
+                        f"Scanf version mismatch: expected {SCANF_VERSION[0]}.*.* "
+                        f"got {event.version.major}.{event.version.minor}.{event.version.patch}"
+                    )
+
                 offset += TaskScanfConfig.SIZE
                 self.events.append(event)
                 self._configure(event.version, event.max_task_name_len)
 
                 break
-            _warning(
+            _error(
                 f"Missed event: {EVENT_TYPE_NAMES[event_type]}({event_type}) at offset {offset} "
                 f"instead of TASK_SCANF_CONFIG({TASK_SCANF_CONFIG.__repr__()}).\n"
                 f"Possibly different Scanf-writer version or corrupted traceLog file."
