@@ -1,6 +1,7 @@
 import struct
 import sys
 from typing import Optional, Dict
+from itmo_ics_printf import __version__
 
 try:
     from icecream import ic
@@ -8,6 +9,9 @@ except ImportError:
 
     def ic(*args):
         print(*args)
+
+
+SCANF_VERSION = tuple(map(int, __version__.split(".")))
 
 
 TASK_CREATE = 0
@@ -27,6 +31,19 @@ def _warning(message: str) -> None:
     print(f"{"-" * 20}\nWarning:\n{message}\n{"-" * 20}\n", file=sys.stderr, end="")
 
 
+class NoScanfConfigError(Exception):
+    def __init__(self):
+        super().__init__("No Scanf configuration found in the trace log.")
+        self.message = "No Scanf configuration found in the trace log."
+
+
+class DifferentScanfVersionError(Exception):
+    def __init__(self, expected: str, actual: str):
+        super().__init__(f"Expected Scanf version {expected}, but got {actual}.")
+        self.expected = expected
+        self.actual = actual
+
+
 class TraceEvent:
     @classmethod
     def from_bytes(
@@ -37,9 +54,9 @@ class TraceEvent:
 
 class TaskScanfConfig(TraceEvent):
     class ScanfVersion:
-        major = 0
-        minor = 1
-        patch = 0
+        major = SCANF_VERSION[0]
+        minor = SCANF_VERSION[1]
+        patch = SCANF_VERSION[2]
 
         def __init__(self, major: int, minor: int, patch: int):
             self.major = major
@@ -165,17 +182,18 @@ class TraceLog:
                 event = TaskScanfConfig.from_bytes(
                     content[offset : offset + TaskScanfConfig.SIZE]
                 )
+                if event.version.major != SCANF_VERSION[0]:
+                    raise DifferentScanfVersionError(
+                        expected=f"{SCANF_VERSION[0]}.*.*",
+                        actual=f"{event.version.major}.{event.version.minor}.{event.version.patch}",
+                    )
+
                 offset += TaskScanfConfig.SIZE
                 self.events.append(event)
                 self._configure(event.version, event.max_task_name_len)
 
                 break
-            _warning(
-                f"Missed event: {EVENT_TYPE_NAMES[event_type]}({event_type}) at offset {offset} "
-                f"instead of TASK_SCANF_CONFIG({TASK_SCANF_CONFIG.__repr__()}).\n"
-                f"Possibly different Scanf-writer version or corrupted traceLog file."
-            )
-            break
+            raise NoScanfConfigError()
 
         while offset < len(content):
             event_type = content[offset]
