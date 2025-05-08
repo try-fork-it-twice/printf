@@ -31,9 +31,17 @@ def _warning(message: str) -> None:
     print(f"{"-" * 20}\nWarning:\n{message}\n{"-" * 20}\n", file=sys.stderr, end="")
 
 
-def _error(message: str) -> None:
-    print(f"{"-" * 20}\nError:\n{message}\n{"-" * 20}\n", file=sys.stderr, end="")
-    raise Exception(message)
+class NoScanfConfigError(Exception):
+    def __init__(self):
+        super().__init__("No Scanf configuration found in the trace log.")
+        self.message = "No Scanf configuration found in the trace log."
+
+
+class DifferentScanfVersionError(Exception):
+    def __init__(self, expected: str, actual: str):
+        super().__init__(f"Expected Scanf version {expected}, but got {actual}.")
+        self.expected = expected
+        self.actual = actual
 
 
 class TraceEvent:
@@ -175,9 +183,9 @@ class TraceLog:
                     content[offset : offset + TaskScanfConfig.SIZE]
                 )
                 if event.version.major != SCANF_VERSION[0]:
-                    _error(
-                        f"Scanf version mismatch: expected {SCANF_VERSION[0]}.*.* "
-                        f"got {event.version.major}.{event.version.minor}.{event.version.patch}"
+                    raise DifferentScanfVersionError(
+                        expected=f"{SCANF_VERSION[0]}.*.*",
+                        actual=f"{event.version.major}.{event.version.minor}.{event.version.patch}",
                     )
 
                 offset += TaskScanfConfig.SIZE
@@ -185,12 +193,7 @@ class TraceLog:
                 self._configure(event.version, event.max_task_name_len)
 
                 break
-            _error(
-                f"Missed event: {EVENT_TYPE_NAMES[event_type]}({event_type}) at offset {offset} "
-                f"instead of TASK_SCANF_CONFIG({TASK_SCANF_CONFIG.__repr__()}).\n"
-                f"Possibly different Scanf-writer version or corrupted traceLog file."
-            )
-            break
+            raise NoScanfConfigError()
 
         while offset < len(content):
             event_type = content[offset]
