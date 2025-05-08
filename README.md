@@ -5,8 +5,30 @@ Viewer for FreeRTOS profiles produced by [scanf](https://github.com/try-fork-it-
 
 ## Development
 
-For the dev packages installation use ```poetry install --with dev```
+**Prerequisites:**
 
-Start by creating trace files. Binary traces uses in many tests. You can use script for that like that: ```poetry run tests/scripts/example_bin_file_gen.py```
+- Python 3.13
+- Poetry
 
-Than you would be able to start tests by ```poetry run test``` command or ```poetry run pytest tests/exactly_that_test.py```
+**Setup project:**
+
+```shell
+poetry install
+```
+
+**Run tests:**
+
+```shell
+poetry run pytest -v
+```
+
+**Type check with mypy:**
+```shell
+poetry run mypy src tests
+```
+
+**Format code:**
+
+```shell
+poetry run ruff format src tests
+```
