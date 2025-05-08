@@ -5,6 +5,8 @@ from itmo_ics_printf.core.datatype import (
     TaskSwitched,
     TraceLog,
     TaskScanfConfig,
+    NoScanfConfigError,
+    DifferentScanfVersionError,
 )
 from pathlib import Path
 
@@ -100,5 +102,13 @@ def test_tracelog_different_major_version(tmp_path: Path) -> None:
     path = tmp_path / "trace_output_invalid.bin"
     gen().task_config(version="255.1.0", max_task_name_len=64).save(path)
 
-    with pytest.raises(Exception):
+    with pytest.raises(DifferentScanfVersionError):
+        TraceLog().load(path)
+
+
+def test_tracelog_load_missing_config_event(tmp_path: Path) -> None:
+    path = tmp_path / "trace_output_invalid.bin"
+    gen().task_custom(timestamp=1, task_number=0, event_type=0).save(path)
+
+    with pytest.raises(NoScanfConfigError):
         TraceLog().load(path)
