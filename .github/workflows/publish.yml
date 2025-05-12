@@ -1,14 +1,16 @@
-name: Publish to PyPI
+name: Publish Python Package
 
 on:
   release:
-    types: [created]
+    types: [created] # Triggered when a new GitHub Release is created
 
 jobs:
-  publish:
-    name: Publish Python Package
+  build_and_publish_testpypi:
+    name: Build and Publish to TestPyPI
     runs-on: ubuntu-latest
-    environment: pypi
+    permissions:
+      contents: read # Needed to checkout the code
+      # id-token: write # OPTIONAL: If using PyPI's trusted publishing
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.11"
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -24,19 +26,62 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      - name: Load cached dependencies
-        uses: actions/cache@v3
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v4
         with:
-          path: |
-            .venv
-            ~/.cache/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+
+      - name: Install project (for build)
         run: poetry install --no-interaction
 
       - name: Build package
         run: poetry build
+
+      - name: Publish to TestPyPI
+        run: poetry publish -r testpypi --no-interaction --username __token__ --password ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+      - name: Upload distributables as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-dists
+          path: dist/
+
+  publish_pypi:
+    name: Publish to PyPI (Main)
+    runs-on: ubuntu-latest
+    needs: build_and_publish_testpypi
+    environment:
+      name: pypi
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code (minimal)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+
+      - name: Download distributables artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-dists
+          path: dist/
+
+      - name: Display structure of downloaded files
+        run: ls -R dist/
 
       - name: Publish to PyPI
         run: poetry publish --no-interaction --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
