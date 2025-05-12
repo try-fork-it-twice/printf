@@ -28,7 +28,7 @@ EVENT_TYPE_NAMES: Dict[int, str] = {
 
 
 def _warning(message: str) -> None:
-    print(f"{"-" * 20}\nWarning:\n{message}\n{"-" * 20}\n", file=sys.stderr, end="")
+    print(f"{'-' * 20}\nWarning:\n{message}\n{'-' * 20}\n", file=sys.stderr, end="")
 
 
 class NoScanfConfigError(Exception):
