@@ -2,15 +2,14 @@ name: Publish Python Package
 
 on:
   release:
-    types: [created] # Triggered when a new GitHub Release is created
+    types: [created]
 
 jobs:
   build_and_publish_testpypi:
     name: Build and Publish to TestPyPI
     runs-on: ubuntu-latest
     permissions:
-      contents: read # Needed to checkout the code
-      # id-token: write # OPTIONAL: If using PyPI's trusted publishing
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,6 +41,9 @@ jobs:
 
       - name: Build package
         run: poetry build
+
+      - name: Configure Poetry for TestPyPI
+        run: poetry config repositories.testpypi https://test.pypi.org/legacy/
 
       - name: Publish to TestPyPI
         run: poetry publish -r testpypi --no-interaction --username __token__ --password ${{ secrets.TEST_PYPI_API_TOKEN }}
