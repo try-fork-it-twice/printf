@@ -12,7 +12,6 @@ from pathlib import Path
 
 
 def test_tracelog_load_basic_valid_file(tmp_path: Path) -> None:
-
     path = tmp_path / "trace_output.bin"
     (
         gen()
