@@ -1,10 +1,9 @@
 import struct
-import sys
-import warnings
+
 from abc import ABC
 from pathlib import Path
-
-from typing import Optional, Dict
+from abc import abstractmethod
+from typing import Dict
 from itmo_ics_printf import __version__
 
 try:
@@ -31,14 +30,6 @@ EVENT_TYPE_NAMES: Dict[int, str] = {
 }
 
 
-def _warning(message: str) -> None:
-    warnings.warn(
-        f"{'-' * 20}\nWarning:\n{message}\n{'-' * 20}\n",
-        category=RuntimeWarning,
-        stacklevel=2,
-    )
-
-
 class NoScanfConfigError(Exception):
     def __init__(self) -> None:
         super().__init__("No Scanf configuration found in the trace log.")
@@ -52,26 +43,37 @@ class DifferentScanfVersionError(Exception):
         self.actual = actual
 
 
+class ScanfVersion:
+    major = SCANF_VERSION[0]
+    minor = SCANF_VERSION[1]
+    patch = SCANF_VERSION[2]
+
+    def __init__(self, major: int, minor: int, patch: int) -> None:
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+
+    def __repr__(self) -> str:
+        return f"{self.major}.{self.minor}.{self.patch}"
+
+
+class Config:
+    def __init__(self, version: ScanfVersion, max_task_name_len: int) -> None:
+        self.version = version
+        self.max_task_name_len = max_task_name_len
+
+    def __repr__(self) -> str:
+        return f"Config(version={self.version}, max_task_name_len={self.max_task_name_len})"
+
+
 class TraceEvent(ABC):
     @classmethod
-    def from_bytes(cls, buf: bytes) -> "TraceEvent":
+    @abstractmethod
+    def from_bytes(cls, cfg: Config, buf: bytes) -> "TraceEvent":
         raise NotImplementedError("Subclasses should implement this method")
 
 
 class TaskScanfConfig(TraceEvent):
-    class ScanfVersion:
-        major = SCANF_VERSION[0]
-        minor = SCANF_VERSION[1]
-        patch = SCANF_VERSION[2]
-
-        def __init__(self, major: int, minor: int, patch: int) -> None:
-            self.major = major
-            self.minor = minor
-            self.patch = patch
-
-        def __repr__(self) -> str:
-            return f"{self.major}.{self.minor}.{self.patch}"
-
     STRUCT_FORMAT = f"<B B B B B"
     SIZE = struct.calcsize(STRUCT_FORMAT)
 
@@ -85,18 +87,20 @@ class TaskScanfConfig(TraceEvent):
     @classmethod
     def from_bytes(
         cls,
+        cfg: Config,
         buf: bytes,
     ) -> "TaskScanfConfig":
         _, major, minor, patch, max_task_name_len = struct.unpack(
             cls.STRUCT_FORMAT, buf[: cls.SIZE]
         )
-        version = cls.ScanfVersion(major, minor, patch)
+        version = ScanfVersion(major, minor, patch)
         return cls(version, max_task_name_len)
 
 
 class TaskCreate(TraceEvent):
     STRUCT_FORMAT = f"<B I I"
     SIZE = struct.calcsize(STRUCT_FORMAT)
+    max_task_name_len: int = 64
 
     def __init__(self, timestamp: int, task_number: int, task_name: str) -> None:
         self.timestamp = timestamp
@@ -109,17 +113,13 @@ class TaskCreate(TraceEvent):
             f" task_name={self.task_name})"
         )
 
-    @classmethod
-    def from_bytes(
-        cls, buf: bytes, max_task_name_len: Optional[int] = None
-    ) -> "TaskCreate":
-        if max_task_name_len is None:
-            max_task_name_len = 64
-            _warning(
-                f"max_task_name_len is None, using default value: {max_task_name_len}"
-            )
+    def set_max_task_name_len(self, max_task_name_len: int) -> "TaskCreate":
+        self.max_task_name_len = max_task_name_len
+        return self
 
-        full_format = f"{cls.STRUCT_FORMAT} {max_task_name_len}s"
+    @classmethod
+    def from_bytes(cls, cfg: Config, buf: bytes) -> "TraceEvent":
+        full_format = f"{cls.STRUCT_FORMAT} {cfg.max_task_name_len}s"
         full_size = struct.calcsize(full_format)
 
         if len(buf) < full_size:
@@ -153,7 +153,7 @@ class TaskSwitched(TraceEvent):
         return f"TaskSwitched({type_str}, timestamp={self.timestamp}, task_number={self.task_number})"
 
     @classmethod
-    def from_bytes(cls, buf: bytes) -> "TaskSwitched":
+    def from_bytes(cls, cfg: Config, buf: bytes) -> "TaskSwitched":
         event_type, timestamp, task_number = struct.unpack(
             cls.STRUCT_FORMAT, buf[: cls.SIZE]
         )
@@ -162,21 +162,19 @@ class TaskSwitched(TraceEvent):
 
 class TraceLog:
     events: list[TraceEvent]
-    max_task_name_len: int
-    scanf_version: TaskScanfConfig.ScanfVersion
+
+    config: Config = Config(
+        version=ScanfVersion(0, 0, 0),
+        max_task_name_len=64,
+    )
 
     def __init__(self) -> None:
         self.events = []
 
-    def _configure(
-        self, version: TaskScanfConfig.ScanfVersion, max_task_name_len: int
-    ) -> None:
-        self.max_task_name_len = max_task_name_len
-
-        self.scanf_version = version
-        print(
-            f"Configured TraceLog: version={self.scanf_version}, "
-            f"max_task_name_len={self.max_task_name_len}"
+    def _configure(self, version: ScanfVersion, max_task_name_len: int) -> None:
+        self.config = Config(
+            version=version,
+            max_task_name_len=max_task_name_len,
         )
 
     def load(self, filename: str | Path) -> "TraceLog":
@@ -190,7 +188,7 @@ class TraceLog:
 
         event: TraceEvent
         event = TaskScanfConfig.from_bytes(
-            content[offset : offset + TaskScanfConfig.SIZE]
+            self.config, content[offset : offset + TaskScanfConfig.SIZE]
         )
         if event.version.major != SCANF_VERSION[0]:
             raise DifferentScanfVersionError(
@@ -207,13 +205,17 @@ class TraceLog:
 
             if event_type == TASK_CREATE:
                 event = TaskCreate.from_bytes(
-                    content[offset : offset + TaskCreate.SIZE + self.max_task_name_len],
-                    self.max_task_name_len,
+                    self.config,
+                    content[
+                        offset : offset
+                        + TaskCreate.SIZE
+                        + self.config.max_task_name_len
+                    ],
                 )
-                offset += TaskCreate.SIZE + self.max_task_name_len
+                offset += TaskCreate.SIZE + self.config.max_task_name_len
             elif event_type in (TASK_SWITCHED_IN, TASK_SWITCHED_OUT):
                 event = TaskSwitched.from_bytes(
-                    content[offset : offset + TaskSwitched.SIZE]
+                    self.config, content[offset : offset + TaskSwitched.SIZE]
                 )
                 offset += TaskSwitched.SIZE
             else:
