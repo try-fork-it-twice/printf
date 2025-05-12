@@ -1,13 +1,17 @@
 import struct
 import sys
+import warnings
+from abc import ABC
+from pathlib import Path
+
 from typing import Optional, Dict
 from itmo_ics_printf import __version__
 
 try:
-    from icecream import ic
+    from icecream import ic  # type: ignore
 except ImportError:
 
-    def ic(*args):
+    def ic(*args: str) -> None:
         print(*args)
 
 
@@ -28,27 +32,29 @@ EVENT_TYPE_NAMES: Dict[int, str] = {
 
 
 def _warning(message: str) -> None:
-    print(f"{'-' * 20}\nWarning:\n{message}\n{'-' * 20}\n", file=sys.stderr, end="")
+    warnings.warn(
+        f"{'-' * 20}\nWarning:\n{message}\n{'-' * 20}\n",
+        category=RuntimeWarning,
+        stacklevel=2,
+    )
 
 
 class NoScanfConfigError(Exception):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("No Scanf configuration found in the trace log.")
         self.message = "No Scanf configuration found in the trace log."
 
 
 class DifferentScanfVersionError(Exception):
-    def __init__(self, expected: str, actual: str):
+    def __init__(self, expected: str, actual: str) -> None:
         super().__init__(f"Expected Scanf version {expected}, but got {actual}.")
         self.expected = expected
         self.actual = actual
 
 
-class TraceEvent:
+class TraceEvent(ABC):
     @classmethod
-    def from_bytes(
-        cls, buf: bytes, max_task_name_len: Optional[int] = None
-    ) -> "TraceEvent":
+    def from_bytes(cls, buf: bytes) -> "TraceEvent":
         raise NotImplementedError("Subclasses should implement this method")
 
 
@@ -58,7 +64,7 @@ class TaskScanfConfig(TraceEvent):
         minor = SCANF_VERSION[1]
         patch = SCANF_VERSION[2]
 
-        def __init__(self, major: int, minor: int, patch: int):
+        def __init__(self, major: int, minor: int, patch: int) -> None:
             self.major = major
             self.minor = minor
             self.patch = patch
@@ -69,7 +75,7 @@ class TaskScanfConfig(TraceEvent):
     STRUCT_FORMAT = f"<B B B B B"
     SIZE = struct.calcsize(STRUCT_FORMAT)
 
-    def __init__(self, version: ScanfVersion, max_task_name_len: int):
+    def __init__(self, version: ScanfVersion, max_task_name_len: int) -> None:
         self.version = version
         self.max_task_name_len = max_task_name_len
 
@@ -92,7 +98,7 @@ class TaskCreate(TraceEvent):
     STRUCT_FORMAT = f"<B I I"
     SIZE = struct.calcsize(STRUCT_FORMAT)
 
-    def __init__(self, timestamp: int, task_number: int, task_name: str):
+    def __init__(self, timestamp: int, task_number: int, task_name: str) -> None:
         self.timestamp = timestamp
         self.task_number = task_number
         self.task_name = task_name
@@ -133,7 +139,7 @@ class TaskSwitched(TraceEvent):
     STRUCT_FORMAT = "<B I I"
     SIZE = struct.calcsize(STRUCT_FORMAT)
 
-    def __init__(self, event_type: int, timestamp: int, task_number: int):
+    def __init__(self, event_type: int, timestamp: int, task_number: int) -> None:
         self.event_type = event_type
         self.timestamp = timestamp
         self.task_number = task_number
@@ -155,10 +161,12 @@ class TaskSwitched(TraceEvent):
 
 
 class TraceLog:
-    def __init__(self):
+    events: list[TraceEvent]
+    max_task_name_len: int
+    scanf_version: TaskScanfConfig.ScanfVersion
+
+    def __init__(self) -> None:
         self.events = []
-        self.max_task_name_len: Optional[int] = 64
-        self.scanf_version: Optional[TaskScanfConfig.ScanfVersion] = None
 
     def _configure(
         self, version: TaskScanfConfig.ScanfVersion, max_task_name_len: int
@@ -171,29 +179,28 @@ class TraceLog:
             f"max_task_name_len={self.max_task_name_len}"
         )
 
-    def load(self, filename: str) -> "TraceLog":
+    def load(self, filename: str | Path) -> "TraceLog":
         with open(filename, "rb") as f:
             content = f.read()
 
-        offset = 0
-        while offset < len(content):
-            event_type = content[offset]
-            if event_type == TASK_SCANF_CONFIG:
-                event = TaskScanfConfig.from_bytes(
-                    content[offset : offset + TaskScanfConfig.SIZE]
-                )
-                if event.version.major != SCANF_VERSION[0]:
-                    raise DifferentScanfVersionError(
-                        expected=f"{SCANF_VERSION[0]}.*.*",
-                        actual=f"{event.version.major}.{event.version.minor}.{event.version.patch}",
-                    )
-
-                offset += TaskScanfConfig.SIZE
-                self.events.append(event)
-                self._configure(event.version, event.max_task_name_len)
-
-                break
+        offset: int = 0
+        event_type = content[offset]
+        if event_type != TASK_SCANF_CONFIG:
             raise NoScanfConfigError()
+
+        event: TraceEvent
+        event = TaskScanfConfig.from_bytes(
+            content[offset : offset + TaskScanfConfig.SIZE]
+        )
+        if event.version.major != SCANF_VERSION[0]:
+            raise DifferentScanfVersionError(
+                expected=f"{SCANF_VERSION[0]}.*.*",
+                actual=f"{event.version.major}.{event.version.minor}.{event.version.patch}",
+            )
+
+        offset += TaskScanfConfig.SIZE
+        self.events.append(event)
+        self._configure(event.version, event.max_task_name_len)
 
         while offset < len(content):
             event_type = content[offset]
