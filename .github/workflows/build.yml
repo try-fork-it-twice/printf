@@ -39,10 +39,13 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Run mypy static type checking
-        run: poetry run mypy src tests
+        run: poetry run mypy itmo_ics_printf tests
+
+      - name: Check imports order with ruff
+        run: poetry run ruff check --diff itmo_ics_printf tests
 
       - name: Check formatting with ruff
-        run: poetry run ruff format --diff src tests
+        run: poetry run ruff format --diff itmo_ics_printf tests
 
       - name: Test with pytest
         run: poetry run pytest -svv

@@ -1,19 +1,11 @@
 import struct
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
-try:
-    from icecream import ic  # type: ignore
-except ImportError:
-
-    def ic(*args: str) -> None:
-        print(*args)
-
-
-TASK_CREATE = 0
-TASK_SWITCHED_IN = 1
-TASK_SWITCHED_OUT = 2
-TASK_SCANF_CONFIG = 3
+CONFIG = 0
+TASK_CREATE = 1
+TASK_SWITCHED_IN = 2
+TASK_SWITCHED_OUT = 3
 
 
 class TraceGenerator:
@@ -21,7 +13,10 @@ class TraceGenerator:
         self.buffer = bytearray()
 
     def task_create(
-        self, timestamp: int, task_number: int, task_name: str
+        self,
+        timestamp: int,
+        task_number: int,
+        task_name: str,
     ) -> "TraceGenerator":
         fmt = "<B I I 64s"
         encoded = task_name.encode("utf-8")
@@ -30,7 +25,7 @@ class TraceGenerator:
         else:
             encoded = encoded + b"\0" + b"\0" * (64 - len(encoded) - 1)
         self.buffer.extend(
-            struct.pack(fmt, TASK_CREATE, timestamp, task_number, encoded)
+            struct.pack(fmt, TASK_CREATE, timestamp, task_number, encoded),
         )
         return self
 
@@ -59,19 +54,21 @@ class TraceGenerator:
             else:
                 encoded = encoded + b"\0" + b"\0" * (64 - len(encoded) - 1)
             self.buffer.extend(
-                struct.pack(fmt, event_type, timestamp, task_number) + encoded
+                struct.pack(fmt, event_type, timestamp, task_number) + encoded,
             )
         else:
             self.buffer.extend(struct.pack(fmt, event_type, timestamp, task_number))
         return self
 
     def task_config(
-        self, version: str, max_task_name_len: int = 64
+        self,
+        version: str,
+        max_task_name_len: int = 64,
     ) -> "TraceGenerator":
         fmt = "<B B B B B"
         major, minor, patch = map(int, version.split("."))
         self.buffer.extend(
-            struct.pack(fmt, TASK_SCANF_CONFIG, major, minor, patch, max_task_name_len)
+            struct.pack(fmt, CONFIG, major, minor, patch, max_task_name_len),
         )
         return self
 
@@ -80,7 +77,7 @@ class TraceGenerator:
             filename = filename.__str__()
         with open(filename, "w+b") as f:
             f.write(self.buffer)
-        ic("Saved trace file to", filename)
+
         return self
 
 

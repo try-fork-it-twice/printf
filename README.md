@@ -24,11 +24,12 @@ poetry run pytest -v
 
 **Type check with mypy:**
 ```shell
-poetry run mypy src tests
+poetry run mypy itmo_ics_printf tests
 ```
 
 **Format code:**
 
 ```shell
-poetry run ruff format src tests
+poetry run ruff check --fix itmo_ics_printf tests
+poetry run ruff format itmo_ics_printf tests
 ```

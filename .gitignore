@@ -6,12 +6,10 @@ dist/
 *.pyo
 *.egg-info/
 .DS_Store
+.coverage
 
 # Poetry
 poetry.lock
-
-# Example bin trace files
-*.bin
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
