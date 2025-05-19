@@ -1,19 +1,19 @@
-# Printf Project Manual
+# Руководство по Printf Project
 
-## Overview
-Printf is a program to visualization kernel events of FreeRTOS embedded system.
+## Обзор
+Printf - это программа для визуализации событий ядра встраиваемой системы FreeRTOS.
 
-## Table of Contents
-- [Installation](#installation)
-- [Basic Usage](#basic-usage)
-- [Examples](#examples)
+## Содержание
+- [Установка](#installation)
+- [Основы использования](#basic-usage)
+- [Примеры](#examples)
 
-## Installation
+## Установка
 ```bash
 pip install itmo-ics-printf
 ```
 
-## Basic Usage
+## Основы использования
 ```python
 from itmo_ics_printf import TraceLog
 
@@ -22,8 +22,8 @@ tracelog = TraceLog.load("my_stack_trace.bin")
 tracelog.plot()
 ```
 
-## Examples
-### Get a diagram with everything
+## Примеры
+### Получение диаграммы со всеми событиями
 ```python
 from itmo_ics_printf import TraceLog
 
@@ -32,12 +32,12 @@ tracelog = TraceLog.load("my_stack_trace.bin")
 tracelog.plot()
 ```
 
-### Pick only events of first task
+### Выбор только событий первой задачи
 ```python
 from itmo_ics_printf import plot_events
 from itmo_ics_printf.events import TaskCreate, TaskSwitchedIn, TaskSwitchedOut
 
-# Select only events of task #1
+# Выбираем только события задачи №1
 events = [
     event
     for event in tracelog.events
@@ -45,7 +45,3 @@ events = [
 ]
 plot_events(events)
 ```
-
-
-
-
