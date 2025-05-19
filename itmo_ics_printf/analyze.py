@@ -57,11 +57,14 @@ def events_execution_info(events: list[TraceEvent]) -> ExecutionInfo:
                 interval = (switch_ins.pop(task_number), timestamp)
                 executions.setdefault(task_number, []).append(interval)
 
-    stats = _events_execution_stats(executions)
+    stats = _events_execution_stats(tasks, executions)
     return ExecutionInfo(tasks, executions, stats)
 
 
-def _events_execution_stats(executions: dict[TaskNumber, list[tuple[Microseconds, Microseconds]]]) -> ExecutionStats:
+def _events_execution_stats(
+    tasks: dict[TaskNumber, Task],
+    executions: dict[TaskNumber, list[tuple[Microseconds, Microseconds]]],
+) -> ExecutionStats:
     if not executions:
         return ExecutionStats(min_execution=(0, 0), max_execution=(0, 0), mean_execution=0, min_idle=0, max_idle=0)
 
@@ -92,8 +95,10 @@ def _events_execution_stats(executions: dict[TaskNumber, list[tuple[Microseconds
     mean_exec_time = total_exec_time // total_exec_count if total_exec_count > 0 else 0
 
     all_intervals = []
-    for intervals in executions.values():
-        all_intervals.extend(intervals)
+    for task_num, intervals in executions.items():
+        task = tasks[task_num]
+        if task.name != "IDLE":
+            all_intervals.extend(intervals)
 
     all_intervals.sort()
 
@@ -101,8 +106,7 @@ def _events_execution_stats(executions: dict[TaskNumber, list[tuple[Microseconds
     for i in range(1, len(all_intervals)):
         current_start = all_intervals[i][0]
         prev_end = all_intervals[i - 1][1]
-        if current_start > prev_end:
-            idle_times.append(current_start - prev_end)
+        idle_times.append(current_start - prev_end)
 
     min_idle = min(idle_times) if idle_times else 0
     max_idle = max(idle_times) if idle_times else 0
