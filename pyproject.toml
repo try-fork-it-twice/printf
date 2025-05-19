@@ -1,6 +1,6 @@
 [project]
 name = "itmo-ics-printf"
-version = "0.2.1"
+version = "1.0.0"
 description = "Visualisation and analysation tool for 'scanf' - FreeRTOS profiler grabber"
 authors = [
     { name = "Alexander Nalobin" },
