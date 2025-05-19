@@ -1,0 +1,15 @@
+.venv
+__pycache__/
+.pytest_cache/
+dist/
+*.pyc
+*.pyo
+*.egg-info/
+.DS_Store
+.coverage
+
+# Poetry
+poetry.lock
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints

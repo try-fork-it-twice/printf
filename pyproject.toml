@@ -1,0 +1,48 @@
+[project]
+name = "itmo-ics-printf"
+version = "0.2.1"
+description = "Visualisation and analysation tool for 'scanf' - FreeRTOS profiler grabber"
+authors = [
+    { name = "Alexander Nalobin" },
+    { name = "Mihail Butvin" },
+    { name = "Ivan Tolmachev" },
+    { name = "Georgii Khabner" },
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.poetry]
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+matplotlib = { version = ">=3.7.1, <4.0.0" }
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.0.0"
+mypy = "^1.15.0"
+ruff = "^0.11.8"
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = "matplotlib.*"
+ignore_missing_imports = true
+ignore_errors = true
+
+
+[tool.ruff]
+line-length = 140
+
+[tool.ruff.lint]
+select = ["I", "F841", "F401"]
+fixable = ["ALL"]
