@@ -53,9 +53,7 @@ def test_tracelog_load_no_events(tmp_path: Path) -> None:
 
 def test_tracelog_load_missing_event_fields(tmp_path: Path) -> None:
     path = tmp_path / "trace_output_invalid.bin"
-    gen().task_config(version="1.0.0", max_task_name_len=64).task_custom(
-        timestamp=1, task_number=1, event_type=0
-    ).save(path)
+    gen().task_config(version="1.0.0", max_task_name_len=64).task_custom(timestamp=1, task_number=1, event_type=0).save(path)
 
     with pytest.raises(Exception):
         TraceLog.load(path)
@@ -63,9 +61,7 @@ def test_tracelog_load_missing_event_fields(tmp_path: Path) -> None:
 
 def test_tracelog_load_unknown_event_type(tmp_path: Path) -> None:
     path = tmp_path / "trace_output_invalid.bin"
-    gen().task_config(version="1.0.0", max_task_name_len=64).task_custom(
-        timestamp=1, task_number=0, event_type=99
-    ).save(path)
+    gen().task_config(version="1.0.0", max_task_name_len=64).task_custom(timestamp=1, task_number=0, event_type=99).save(path)
 
     with pytest.raises(Exception):
         TraceLog.load(path)
