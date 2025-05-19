@@ -80,6 +80,10 @@ def _events_execution_stats(
     total_exec_count = 0
 
     for task_num, times in execution_times.items():
+        task = tasks[task_num]
+        if task.name == "IDLE":
+            continue
+
         for time in times:
             total_exec_time += time
             total_exec_count += 1
