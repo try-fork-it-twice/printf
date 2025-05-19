@@ -20,7 +20,6 @@ matplotlib = { version = ">=3.7.1, <4.0.0" }
 
 
 [tool.poetry.group.dev.dependencies]
-icecream = "^2.1.4"
 pytest = "^8.3.5"
 pytest-cov = "^6.0.0"
 mypy = "^1.15.0"
@@ -31,15 +30,19 @@ ruff = "^0.11.8"
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.scripts]
-test = "pytest:main"
 
-
-[[tool.mypy.overrides]]
-module = "icecream"
-ignore_missing_imports = true
+[tool.mypy]
+strict = true
 
 [[tool.mypy.overrides]]
 module = "matplotlib.*"
 ignore_missing_imports = true
 ignore_errors = true
+
+
+[tool.ruff]
+line-length = 140
+
+[tool.ruff.lint]
+select = ["I", "F841", "F401"]
+fixable = ["ALL"]
